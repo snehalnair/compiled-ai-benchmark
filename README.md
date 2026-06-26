@@ -74,7 +74,7 @@ To adapt it to a new workflow:
 Minimal sample shape:
 
 ```json
-{"text": "Customer: I lost my debit card and need to block it.", "fields": {"intent": "cash_withdrawal_card"}}
+{"text": "Customer: I lost my debit card and need to block it.", "fields": {"intent": "lost_or_stolen_card"}}
 ```
 
 Minimal extraction shape:
