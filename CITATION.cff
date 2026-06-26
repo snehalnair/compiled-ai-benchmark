@@ -6,7 +6,7 @@ message: >-
   final paper: results are directional and the caveats in RESULTS.md are part of
   the claim. If you use it, please cite this repository and note the version/date.
 type: software
-version: "0.1.0"
+version: "0.1.1"
 date-released: "2026-06-26"
 authors:
   - family-names: Nair

@@ -37,6 +37,7 @@ model, and kill conditions.
 | [`run.py`](run.py) | Arm runner for single-shot frontier, open model, and simple cascade |
 | [`sweep.py`](sweep.py) | Two-cheap-model disagreement-gate Pareto sweep |
 | [`harden.py`](harden.py) | v2 hard-invoice run: 3-model ensemble, continuous gate, latency, upfront router |
+| [`selfhosted_cost.py`](selfhosted_cost.py) | Parametric self-hosted GPU cost model: API price vs own-GPU break-even by utilization |
 | [`tasks/example_triage.yaml`](tasks/example_triage.yaml) | Copyable YAML task spec for your own workflow |
 | [`data/pareto_invoices.csv`](data/pareto_invoices.csv) | Invoice cost/quality sweep |
 | [`data/pareto_support_triage.csv`](data/pareto_support_triage.csv) | Support-triage cost/quality sweep |
@@ -239,6 +240,12 @@ v2 hard-invoice latency and upfront-router run:
 python harden.py --limit 100 --workers 6
 ```
 
+Self-hosted GPU cost model (no GPU or API needed):
+
+```bash
+python selfhosted_cost.py --api-blended 0.05
+```
+
 All scripts report mean cost per run, task success, bootstrap confidence intervals,
 and frontier fraction where relevant. Sweep scripts also write CSVs under
 [`data/`](data/).
@@ -266,7 +273,10 @@ and frontier fraction where relevant. Sweep scripts also write CSVs under
 - Public datasets are cleaner than messy SME production workflows.
 - Frontier baselines are zero/few-shot structured-output baselines, not heavily
   optimized task-specific systems.
-- Self-hosted GPU total cost is not yet included.
+- Self-hosted GPU cost is a parametric model ([`selfhosted_cost.py`](selfhosted_cost.py)), not measured
+  GPU throughput — plug in your own GPU $/hr and measured tokens/sec. Finding: at ~$0.05/1M for a 7B,
+  the per-token API is roughly the self-hosted cost floor unless you run a cheap (spot/reserved) GPU at
+  high, steady utilization.
 - The upfront router in v2 is deliberately simple: six input features and a
   cross-fitted logistic model.
 - Latency was measured under concurrent load with provider retries, so absolute p99
@@ -279,7 +289,7 @@ clearer, and falsifiable.
 
 ## Next Work
 
-1. Add a self-hosted GPU cost track.
+1. Replace the parametric self-hosted cost model with measured GPU throughput (vLLM/TGI).
 2. Add raw scanned receipt/PDF extraction to separate OCR difficulty from reasoning.
 3. Add one judgment-heavy workflow to locate where routing and compilation break.
 4. Strengthen the upfront router with embedding/input features.
