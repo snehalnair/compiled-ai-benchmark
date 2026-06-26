@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+title: "Compiled AI Benchmark"
+message: >-
+  An early, reproducible benchmark for the cost x quality x latency x determinism
+  frontier of compiled/routed AI workflows. This is a v0.1 evidence package, not a
+  final paper: results are directional and the caveats in RESULTS.md are part of
+  the claim. If you use it, please cite this repository and note the version/date.
+type: software
+version: "0.1.0"
+date-released: "2026-06-26"
+authors:
+  - family-names: Nair
+    given-names: Snehal
+    email: snehal.1409@gmail.com
+keywords:
+  - large language models
+  - model routing
+  - cost-quality-latency tradeoff
+  - compiled AI workflows
+  - operational AI evaluation
+  - reproducible benchmark
+license: Apache-2.0
