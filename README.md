@@ -43,6 +43,53 @@ model, and kill conditions.
 
 ---
 
+## What You Can Use It For
+
+This repo is not only a fixed invoice/support benchmark. It is also a template for
+testing whether *your* repeated workflow should run cheap-only, frontier-only,
+cascaded, or upfront-routed under a cost, quality, and latency contract.
+
+To adapt it to a new workflow:
+
+1. Define the task shape in [`loaders.py`](loaders.py):
+   - extraction: fields to extract and optional numeric fields
+   - classification: one label field plus an allowed-label enum
+2. Provide ground-truth examples:
+   - each sample needs `text` and expected `fields`
+   - examples can come from a JSONL file, CSV, public dataset, or internal eval set
+3. Reuse the existing arms in [`arms.py`](arms.py):
+   - frontier single-shot
+   - cheap/open model
+   - cheap-first cascade
+4. Reuse or extend scoring in [`scoring.py`](scoring.py):
+   - exact document success
+   - per-field accuracy
+   - label accuracy
+   - custom domain tolerances
+5. Run the benchmark:
+   - [`run.py`](run.py) for cheap/open vs frontier vs simple cascade
+   - [`sweep.py`](sweep.py) for a cost/quality Pareto curve
+   - [`harden.py`](harden.py) when you need p50/p99 latency and upfront routing
+
+Minimal sample shape:
+
+```json
+{"text": "Customer: I lost my debit card and need to block it.", "fields": {"intent": "cash_withdrawal_card"}}
+```
+
+Minimal extraction shape:
+
+```json
+{"text": "Invoice INV-100 total due $42.50", "fields": {"invoice_number": "INV-100", "total_amount": "42.50"}}
+```
+
+The practical question this repo helps answer:
+
+> Given a quality bar and latency SLA, what is the cheapest runtime topology that
+> still works for this workflow?
+
+---
+
 ## Task Suite
 
 The current package covers two workflow types:
@@ -102,7 +149,8 @@ The latency finding:
 ## Setup
 
 ```bash
-cd benchmark
+git clone https://github.com/snehalnair/compiled-ai-benchmark.git
+cd compiled-ai-benchmark
 pip install -r requirements.txt
 
 export ANTHROPIC_API_KEY=sk-ant-...
