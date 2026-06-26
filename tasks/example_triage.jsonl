@@ -1,0 +1,4 @@
+{"text": "I lost my debit card yesterday and need to block it before anyone uses it.", "fields": {"intent": "card_lost"}}
+{"text": "Can you tell me when the refund for my cancelled order will arrive?", "fields": {"intent": "refund_status"}}
+{"text": "I moved flats and need to update the postal address on my account.", "fields": {"intent": "change_address"}}
+{"text": "Please close my account. I have moved to another bank.", "fields": {"intent": "close_account"}}

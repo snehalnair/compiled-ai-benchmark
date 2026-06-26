@@ -1,0 +1,17 @@
+name: example_support_triage
+instruction: >
+  You triage customer support messages. Read the message and classify it as the
+  single best-matching intent.
+
+fields:
+  - name: intent
+    enum:
+      - card_lost
+      - refund_status
+      - change_address
+      - close_account
+
+required_fields:
+  - intent
+
+samples: example_triage.jsonl

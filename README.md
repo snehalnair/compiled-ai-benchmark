@@ -37,6 +37,7 @@ model, and kill conditions.
 | [`run.py`](run.py) | Arm runner for single-shot frontier, open model, and simple cascade |
 | [`sweep.py`](sweep.py) | Two-cheap-model disagreement-gate Pareto sweep |
 | [`harden.py`](harden.py) | v2 hard-invoice run: 3-model ensemble, continuous gate, latency, upfront router |
+| [`tasks/example_triage.yaml`](tasks/example_triage.yaml) | Copyable YAML task spec for your own workflow |
 | [`data/pareto_invoices.csv`](data/pareto_invoices.csv) | Invoice cost/quality sweep |
 | [`data/pareto_support_triage.csv`](data/pareto_support_triage.csv) | Support-triage cost/quality sweep |
 | [`data/harden_invoices_frontier.csv`](data/harden_invoices_frontier.csv) | v2 cost/quality/latency sweep |
@@ -51,37 +52,65 @@ cascaded, or upfront-routed under a cost, quality, and latency contract.
 
 To adapt it to a new workflow:
 
-1. Define the task shape in [`loaders.py`](loaders.py):
-   - extraction: fields to extract and optional numeric fields
-   - classification: one label field plus an allowed-label enum
-2. Provide ground-truth examples:
-   - each sample needs `text` and expected `fields`
-   - examples can come from a JSONL file, CSV, public dataset, or internal eval set
-3. Reuse the existing arms in [`arms.py`](arms.py):
+1. Copy [`tasks/example_triage.yaml`](tasks/example_triage.yaml).
+2. Define the task shape in YAML:
+   - extraction: fields to extract, with optional `type: money` / `type: number`
+   - classification: one label field plus an `enum` of allowed labels
+3. Provide ground-truth examples in JSONL:
+   - each row needs `text` and expected `fields`
+   - sample paths are resolved relative to the YAML file
+4. Reuse the existing arms in [`arms.py`](arms.py):
    - frontier single-shot
    - cheap/open model
    - cheap-first cascade
-4. Reuse or extend scoring in [`scoring.py`](scoring.py):
+5. Reuse or extend scoring in [`scoring.py`](scoring.py):
    - exact document success
    - per-field accuracy
    - label accuracy
    - custom domain tolerances
-5. Run the benchmark:
+6. Run the benchmark:
    - [`run.py`](run.py) for cheap/open vs frontier vs simple cascade
    - [`sweep.py`](sweep.py) for a cost/quality Pareto curve
    - [`harden.py`](harden.py) when you need p50/p99 latency and upfront routing
 
-Minimal sample shape:
+Minimal YAML task:
 
-```json
-{"text": "Customer: I lost my debit card and need to block it.", "fields": {"intent": "lost_or_stolen_card"}}
+```yaml
+name: invoice_extract
+instruction: Extract invoice fields. Return JSON only.
+
+fields:
+  - name: invoice_number
+  - name: total_amount
+    type: money
+
+required_fields:
+  - invoice_number
+  - total_amount
+
+samples: invoices_eval.jsonl
 ```
 
-Minimal extraction shape:
+Minimal JSONL sample:
 
 ```json
 {"text": "Invoice INV-100 total due $42.50", "fields": {"invoice_number": "INV-100", "total_amount": "42.50"}}
 ```
+
+Run it:
+
+```bash
+python run.py --task tasks/example_triage.yaml --limit 4
+python sweep.py --task tasks/example_triage.yaml --limit 4
+python harden.py --task tasks/example_triage.yaml --limit 4
+```
+
+**One caveat when adapting it:** scoring is exact-match (with money-format
+normalization for `type: money` fields), not semantic. Put ground-truth values in a
+canonical form the model can reproduce verbatim — otherwise free-form fields (names,
+addresses, dates) deflate the score, which reads as "the cheap model is bad" when it is
+really "the ground truth was not canonical." See [`tasks/example_expense.yaml`](tasks/example_expense.yaml)
+for a worked second example (money + enum fields).
 
 The practical question this repo helps answer:
 

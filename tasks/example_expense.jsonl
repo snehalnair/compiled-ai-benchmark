@@ -1,0 +1,5 @@
+{"text": "Pret A Manger — lunch meeting, total $12.40", "fields": {"merchant": "Pret A Manger", "amount": "$12.40", "category": "meals"}}
+{"text": "AWS cloud services invoice, amount due $1,204.00", "fields": {"merchant": "AWS", "amount": "$1,204.00", "category": "software"}}
+{"text": "Delta Air Lines, flight LHR-JFK, fare 415.99 USD", "fields": {"merchant": "Delta Air Lines", "amount": "415.99", "category": "travel"}}
+{"text": "Staples order: printer paper and pens, $38.75", "fields": {"merchant": "Staples", "amount": "$38.75", "category": "office"}}
+{"text": "Uber trip in Berlin, Betrag €22,50", "fields": {"merchant": "Uber", "amount": "€22,50", "category": "travel"}}

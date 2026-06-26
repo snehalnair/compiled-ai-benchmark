@@ -11,6 +11,7 @@ the router would call the frontier only on escalated docs; the per-row cost belo
 already reflects that — frontier cost is added only when d >= T.)
 
   python sweep.py --limit 50 --hard
+  python sweep.py --task tasks/example_triage.yaml --limit 50
 """
 import argparse
 import csv
@@ -44,11 +45,14 @@ def main():
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--workers", type=int, default=6)
     ap.add_argument("--dataset", default="invoices_ocr", choices=list(loaders.LOADERS))
+    ap.add_argument("--task", help="YAML task spec. Overrides --dataset/--hard when provided.")
     ap.add_argument("--hard", action="store_true")
     args = ap.parse_args()
     check_keys(["B_frontier_singleshot", "D_compiled_open"])  # need frontier + open
 
-    if args.dataset == "invoices_ocr":
+    if args.task:
+        task = loaders.load_yaml_task(args.task, limit=args.limit, seed=args.seed)
+    elif args.dataset == "invoices_ocr":
         task = loaders.load_invoices_ocr(limit=args.limit, seed=args.seed, hard=args.hard)
     else:
         task = loaders.LOADERS[args.dataset](limit=args.limit, seed=args.seed)

@@ -18,6 +18,7 @@ sequentially; the upfront gate is ~1 ms. API latencies are measured under concur
 so treat them as indicative and read the RELATIVE tail behaviour, not absolute ms.
 
   python harden.py --limit 100 --workers 6
+  python harden.py --task tasks/example_triage.yaml --limit 100 --workers 6
 """
 import argparse
 import csv
@@ -116,10 +117,12 @@ def main():
     ap.add_argument("--limit", type=int, default=100)
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--workers", type=int, default=6)
+    ap.add_argument("--task", help="YAML task spec. Defaults to hard invoice task.")
     args = ap.parse_args()
     check_keys(["B_frontier_singleshot", "D_compiled_open"])
 
-    task = loaders.load_invoices_ocr(limit=args.limit, seed=args.seed, hard=True)
+    task = (loaders.load_yaml_task(args.task, limit=args.limit, seed=args.seed)
+            if args.task else loaders.load_invoices_ocr(limit=args.limit, seed=args.seed, hard=True))
     print(f"dataset={task.name}  fields={task.fields}  n={len(task.samples)}")
     print(f"ensemble={CHEAP}  frontier={config.FRONTIER_MODEL}")
     print("measuring (3 cheap + frontier per doc) ...")

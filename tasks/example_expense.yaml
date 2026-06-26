@@ -1,0 +1,23 @@
+name: example_expense_extraction
+instruction: >
+  Extract structured data from a short expense or receipt line. amount is the total
+  paid as a number (keep the document's own format). category is the single
+  best-matching expense type.
+
+fields:
+  - name: merchant
+  - name: amount
+    type: money
+  - name: category
+    enum:
+      - meals
+      - software
+      - travel
+      - office
+      - other
+
+required_fields:
+  - merchant
+  - amount
+
+samples: example_expense.jsonl

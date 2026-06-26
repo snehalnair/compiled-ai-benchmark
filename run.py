@@ -1,6 +1,7 @@
 """v1 benchmark runner: pluggable dataset, parallel execution, bootstrap CIs.
 
   python run.py                                   # invoices_ocr, 40 docs, arms B/D/R
+  python run.py --task tasks/example_triage.yaml  # user-defined YAML task
   python run.py --dataset synthetic --limit 6
   python run.py --arms A,B,D,R --limit 60 --workers 8
 
@@ -60,6 +61,7 @@ def run_arm(arm_name, task, workers):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dataset", default="invoices_ocr", choices=list(loaders.LOADERS))
+    ap.add_argument("--task", help="YAML task spec. Overrides --dataset when provided.")
     ap.add_argument("--arms", default="B_frontier_singleshot,D_compiled_open,R_routed_cascade")
     ap.add_argument("--limit", type=int, default=40)
     ap.add_argument("--seed", type=int, default=0)
@@ -73,8 +75,12 @@ def main():
             sys.exit(1)
     check_keys(selected)
 
-    print(f"Loading dataset '{args.dataset}' (limit {args.limit}) ...")
-    task = loaders.LOADERS[args.dataset](limit=args.limit, seed=args.seed)
+    if args.task:
+        print(f"Loading YAML task '{args.task}' (limit {args.limit}) ...")
+        task = loaders.load_yaml_task(args.task, limit=args.limit, seed=args.seed)
+    else:
+        print(f"Loading dataset '{args.dataset}' (limit {args.limit}) ...")
+        task = loaders.LOADERS[args.dataset](limit=args.limit, seed=args.seed)
     print(f"dataset={task.name}  fields={task.fields}  n={len(task.samples)}  "
           f"arms={selected}  prices_as_of={config.PRICES_AS_OF}\n")
 

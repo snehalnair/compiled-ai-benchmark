@@ -144,6 +144,89 @@ def load_support_triage(limit=50, seed=0):
                 instruction=instruction, enum={"intent": labels})
 
 
+def _field_names(fields):
+    names = []
+    for f in fields or []:
+        names.append(f["name"] if isinstance(f, dict) else str(f))
+    return names
+
+
+def _numeric_fields(fields, explicit=()):
+    numeric = set(explicit or ())
+    for f in fields or []:
+        if isinstance(f, dict) and f.get("type") in ("number", "numeric", "money"):
+            numeric.add(f["name"])
+    return tuple(numeric)
+
+
+def _enum_fields(fields, explicit=None):
+    enum = dict(explicit or {})
+    for f in fields or []:
+        if isinstance(f, dict) and f.get("enum"):
+            enum[f["name"]] = list(f["enum"])
+    return enum or None
+
+
+def load_yaml_task(path, limit=None, seed=0):
+    """Load a user-defined task from YAML so new workflows do not require editing
+    Python. Sample files are resolved relative to the YAML file.
+
+    Minimal spec:
+
+      name: my_task
+      instruction: Extract ...
+      fields:
+        - name: invoice_number
+        - name: total_amount
+          type: money
+      required_fields: [invoice_number, total_amount]
+      samples: data/my_task.jsonl
+
+    Each JSONL row: {"text": "...", "fields": {"invoice_number": "..."}}
+    """
+    try:
+        import yaml
+    except ImportError as e:
+        raise RuntimeError("YAML task specs require PyYAML. Run: pip install -r requirements.txt") from e
+
+    path = os.path.abspath(path)
+    base = os.path.dirname(path)
+    with open(path) as f:
+        spec = yaml.safe_load(f) or {}
+
+    raw_fields = spec.get("fields") or []
+    fields = _field_names(raw_fields)
+    if not fields:
+        raise ValueError(f"{path}: task spec must define at least one field")
+
+    samples = []
+    if spec.get("samples_inline"):
+        samples.extend(spec["samples_inline"])
+    if spec.get("samples"):
+        sample_path = spec["samples"]
+        if not os.path.isabs(sample_path):
+            sample_path = os.path.join(base, sample_path)
+        with open(sample_path) as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    samples.append(json.loads(line))
+    if limit:
+        samples = samples[:limit]
+    if not samples:
+        raise ValueError(f"{path}: task spec must provide samples or samples_inline")
+
+    return Task(
+        spec.get("name") or os.path.splitext(os.path.basename(path))[0],
+        fields,
+        _numeric_fields(raw_fields, spec.get("numeric_fields")),
+        list(spec.get("required_fields") or fields),
+        samples,
+        instruction=spec.get("instruction", ""),
+        enum=_enum_fields(raw_fields, spec.get("enum")),
+    )
+
+
 LOADERS = {"synthetic": load_synthetic,
            "invoices_ocr": load_invoices_ocr,
            "support_triage": load_support_triage}
