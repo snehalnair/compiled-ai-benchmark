@@ -1,13 +1,25 @@
-"""Self-hosted GPU cost track.
+"""Self-hosted GPU deployment sensitivity analysis.
 
 Turns the benchmark's "open-model cost = API sticker price" into the honest question
 your reviewers will ask: at what sustained utilization does running the open model on
 your OWN GPU beat paying per-token API pricing?
 
-This is a parametric MODEL, not a measurement (we can't spin a GPU here). The throughput
-numbers are ILLUSTRATIVE defaults for a ~7B model under batched serving (vLLM / TGI) —
-replace them with YOUR measured aggregate tokens/sec. The contribution is the break-even
-framework, not the specific figures.
+This is a parametric REGIME MAP, not a benchmark and not a measured point estimate
+(we can't spin a GPU here). The throughput numbers are ILLUSTRATIVE defaults for a
+~7B model under batched serving (vLLM / TGI) — replace them with YOUR measured
+aggregate tokens/sec.
+
+The contribution is the decision frontier: which deployment assumptions make self-hosting beat
+per-token APIs, and which assumptions make APIs win. A single self-hosted number would
+be misleading because throughput is an optimization frontier, not a constant:
+quantization, vLLM/TGI continuous batching, speculative decoding, tensor parallelism,
+batch shape, sequence length, and KV-cache behavior all move it. Quantization can also
+change quality, so compare cost only at iso-quality.
+
+Low/spiky volume adds the deployment trade-off that most SMEs actually face: either keep
+the GPU warm and pay idle cost, or scale to zero and accept cold-start p99 latency.
+Per-token APIs amortize warm, batched fleets across many tenants; a single org often
+cannot.
 
   self-hosted $/1M = (gpu_$per_hr / 3600 / (agg_tok_s * utilization)) * 1e6 * ops_overhead
 
@@ -20,9 +32,10 @@ at near-100% utilization, which a single org rarely matches.
 """
 import argparse
 
-# ILLUSTRATIVE presets — (name, on-demand $/hr, sustained AGGREGATE decode tok/s for a
-# ~7B model with a batching server). These vary hugely with engine, batch size, and
-# sequence length. MEASURE yours and edit this list; the point is the framework below.
+# ILLUSTRATIVE presets — (name, $/hr, sustained AGGREGATE decode tok/s for a ~7B model
+# with a batching server). These vary hugely with engine, quantization, batch shape,
+# sequence length, and quality target. MEASURE yours and edit this list; the point is
+# the framework below.
 GPUS = [
     ("L4 on-dem",     0.80,  2000),
     ("A10G on-dem",   1.00,  3500),
@@ -54,7 +67,8 @@ def main():
     args = ap.parse_args()
     api = args.api_blended
 
-    print(f"Self-hosted $/1M tokens vs API ${api:.3f}/1M   (ops overhead x{args.overhead}; throughput ILLUSTRATIVE)\n")
+    print(f"Self-hosted GPU deployment sensitivity vs API ${api:.3f}/1M")
+    print(f"(ops overhead x{args.overhead}; throughput ILLUSTRATIVE; not a benchmark)\n")
     head = f"{'GPU':13}{'$/hr':>6}{'tok/s':>7}  | " + " ".join(f"{int(u*100):>5}%" for u in UTILS) + "  | break-even"
     print(head); print("-" * len(head))
     for name, hr, toks in GPUS:
@@ -68,17 +82,25 @@ def main():
         print(f"{name:13}{hr:>6.2f}{toks:>7d}  | {cells}  | {be}")
 
     print("\nHow to read it")
-    print("- Each cell = self-hosted $/1M at that sustained utilization (GPU billed 24/7, serving only that fraction).")
+    print("- Each cell = warm 24/7 self-hosted $/1M at that sustained utilization (GPU billed continuously,")
+    print("  serving only that fraction).")
     print(f"- Break-even = the utilization where self-hosting matches the ${api:.3f}/1M API price. Below it the API is")
     print("  cheaper; above it self-hosting wins. Mtok/day = the daily token volume needed to reach that utilization.")
+    print("- This excludes quality changes from quantization, cold-start latency if scaling to zero, and engineering")
+    print("  time beyond the simple overhead multiplier.")
+    print("- Treat this as a deployment card input, not a headline benchmark result. The measured benchmark uses")
+    print("  hosted API costs; this map answers when own-GPU deployment could change the decision.")
     print("\nTakeaway (robust to the exact numbers, within reason)")
     print("- At today's ~$0.05/1M for a 7B, the API is roughly the self-hosted cost FLOOR for most orgs: providers")
     print("  amortize fully-utilized fleets you can't match. Self-hosting wins on cost only with a cheap GPU AND")
     print("  high, steady volume. At low/spiky SME volume, the per-token API is usually cheaper.")
     print("- So self-hosting's case at the 7B tier is mostly data control / residency / no rate limits / customization")
     print("  — NOT cost. Plug in your own GPU $/hr and measured tok/s above to check your situation.")
-    print("\nCaveat: throughput here is illustrative aggregate serving throughput; measure yours (vLLM/TGI, batch,")
-    print("seq length). This is the same thesis as the rest of the benchmark: the cheapest option depends on context.")
+    print("- If you scale to zero, the cost line improves but p99 can degrade from GPU/model warm-up. If you keep")
+    print("  the GPU warm, p99 improves but idle cost dominates low utilization.")
+    print("\nCaveat: throughput here is illustrative aggregate serving throughput; measure yours at iso-quality")
+    print("(vLLM/TGI, quantization, batch shape, sequence length, SLA). This is the same thesis as the rest of")
+    print("the benchmark: the cheapest option depends on context.")
 
 
 if __name__ == "__main__":

@@ -37,7 +37,7 @@ model, and kill conditions.
 | [`run.py`](run.py) | Arm runner for single-shot frontier, open model, and simple cascade |
 | [`sweep.py`](sweep.py) | Two-cheap-model disagreement-gate Pareto sweep |
 | [`harden.py`](harden.py) | v2 hard-invoice run: 3-model ensemble, continuous gate, latency, upfront router |
-| [`selfhosted_cost.py`](selfhosted_cost.py) | Parametric self-hosted GPU cost model: API price vs own-GPU break-even by utilization |
+| [`selfhosted_cost.py`](selfhosted_cost.py) | Deployment sensitivity analysis: API price vs own-GPU break-even under utilization and throughput assumptions |
 | [`tasks/example_triage.yaml`](tasks/example_triage.yaml) | Copyable YAML task spec for your own workflow |
 | [`data/pareto_invoices.csv`](data/pareto_invoices.csv) | Invoice cost/quality sweep |
 | [`data/pareto_support_triage.csv`](data/pareto_support_triage.csv) | Support-triage cost/quality sweep |
@@ -151,6 +151,12 @@ before expanding into more archetypes.
 The routing result is not a single magic multiplier. It is an operating curve:
 quality, cost, frontier fraction, and latency move together.
 
+Self-hosted GPU deployment is intentionally not part of the headline benchmark result.
+Hosted open-model API prices are the measured baseline. [`selfhosted_cost.py`](selfhosted_cost.py)
+is a sensitivity tool for the follow-on deployment question: when would running your
+own GPU change the decision? Use it to map assumptions, not to claim a universal
+self-hosted cost.
+
 ---
 
 ## Headline Results
@@ -240,7 +246,7 @@ v2 hard-invoice latency and upfront-router run:
 python harden.py --limit 100 --workers 6
 ```
 
-Self-hosted GPU cost model (no GPU or API needed):
+Self-hosted GPU deployment sensitivity analysis (no GPU or API needed; not a benchmark):
 
 ```bash
 python selfhosted_cost.py --api-blended 0.05
@@ -267,16 +273,43 @@ and frontier fraction where relevant. Sweep scripts also write CSVs under
 
 ---
 
+## Self-Hosted Deployment Card
+
+If you replace hosted open-model APIs with your own GPU stack, report it as a deployment
+card rather than a single cost number:
+
+| field | what to pin |
+|---|---|
+| model | exact model and revision |
+| serving stack | vLLM/TGI/other, version, scheduler settings |
+| quantization | none/int8/int4/FP8/AWQ/etc., plus quality delta vs the hosted/API arm |
+| hardware | GPU type, count, hourly price, on-demand vs reserved/spot |
+| workload shape | input/output token distribution, context length, concurrency, batch shape |
+| latency policy | always-warm, autoscale, or scale-to-zero; p50/p95/p99 and cold-start time |
+| cost assumptions | utilization bands, idle cost, ops overhead, redundancy/headroom |
+| decision output | effective $/1M only at iso-quality and stated SLA |
+
+The self-hosted question is therefore: under which deployment card does self-hosting
+beat hosted APIs? It is not: what does self-hosting cost in general?
+
+---
+
 ## Caveats
 
 - Current invoice data is OCR text from a public dataset, not raw scanned images.
 - Public datasets are cleaner than messy SME production workflows.
 - Frontier baselines are zero/few-shot structured-output baselines, not heavily
   optimized task-specific systems.
-- Self-hosted GPU cost is a parametric model ([`selfhosted_cost.py`](selfhosted_cost.py)), not measured
-  GPU throughput — plug in your own GPU $/hr and measured tokens/sec. Finding: at ~$0.05/1M for a 7B,
-  the per-token API is roughly the self-hosted cost floor unless you run a cheap (spot/reserved) GPU at
+- Self-hosted GPU cost is deployment sensitivity analysis ([`selfhosted_cost.py`](selfhosted_cost.py)),
+  not a benchmarked cost number and not a headline result. Plug in your own GPU $/hr and measured
+  tokens/sec. Throughput is an optimization frontier: quantization, vLLM/TGI continuous batching,
+  speculative decoding, batch shape, sequence length, and SLA all move the line. Quantization can
+  also change quality, so compare only at iso-quality. Finding: at ~$0.05/1M for a 7B, the hosted
+  per-token API is roughly the self-hosted cost floor unless you run a cheap (spot/reserved) GPU at
   high, steady utilization.
+- Low/spiky volume adds a cost-vs-latency choice: keep the GPU warm and pay idle cost, or scale to zero
+  and pay cold-start p99 latency. This is why the self-hosted track is framed as a decision frontier,
+  not a single number.
 - The upfront router in v2 is deliberately simple: six input features and a
   cross-fitted logistic model.
 - Latency was measured under concurrent load with provider retries, so absolute p99
@@ -289,7 +322,9 @@ clearer, and falsifiable.
 
 ## Next Work
 
-1. Replace the parametric self-hosted cost model with measured GPU throughput (vLLM/TGI).
+1. Add one reference self-hosted deployment card: measured throughput, quality, and cold-start profile
+   for a specific serving stack (vLLM/TGI, quantization, batch/sequence length, SLA), then feed those
+   inputs into the deployment sensitivity map.
 2. Add raw scanned receipt/PDF extraction to separate OCR difficulty from reasoning.
 3. Add one judgment-heavy workflow to locate where routing and compilation break.
 4. Strengthen the upfront router with embedding/input features.

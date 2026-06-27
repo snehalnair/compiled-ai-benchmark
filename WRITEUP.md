@@ -164,14 +164,15 @@ Agents are for figuring out the work. Compiled workflows are for running it.
 This benchmark does not yet prove:
 
 - production robustness on messy SME data
-- self-hosted GPU total cost
+- self-hosted GPU deployment economics beyond the included sensitivity map
 - raw image/PDF extraction quality
 - autonomous workflow compilation
 - long-term drift maintenance
 - performance on open-ended judgment-heavy work
 
 Those are the next tests. The point of this package is smaller: establish a measured,
-reproducible cost-vs-difficulty curve and avoid claiming a universal multiplier.
+reproducible cost-vs-difficulty curve and avoid claiming either a universal routing
+multiplier or a universal self-hosted cost number.
 
 ---
 

@@ -20,13 +20,13 @@ Frontier: `claude-opus-4-8` ($5 / $25 per 1M) · Open: `qwen/qwen-2.5-7b-instruc
 
 - **n = 6.** "17%" is literally one escalated document; the "6.2×" rides on that single escalation. Directional only — v1 scales to ~50–100 docs with confidence intervals.
 - Invoices are **plain text**, not scanned images/PDFs — isolates extraction reasoning from OCR/vision (a separate archetype).
-- Open cost is the **OpenRouter API price**; the self-hosted total-cost story (GPU + ops) is a separate, more honest track.
+- Open cost is the **OpenRouter API price**; self-hosted GPU deployment is not part of this measured result. It belongs in a separate sensitivity card that pins serving stack, quantization, utilization, warm/cold-start policy, quality delta, and SLA.
 - The router gate is **validation-based** (escalate on a missing required field). v1 sweeps a confidence threshold to trace the full cost–quality Pareto curve and report the knee.
 - The A < B cost inversion ($0.00291 < $0.00475) is within n=6 noise (adaptive thinking stays minimal on trivial docs); not a finding.
 
 ## What this earns
 
-A directional green light: on a repeatable extraction workflow, **open-weight + frontier-routing reproduced frontier quality at ~6× lower cost**, with the open model carrying ~83% of the load. The manifesto's cost-at-parity claim now has a (small, honest) number behind it. Next: scale the set, sweep the router threshold for the Pareto curve, add a second archetype, add the self-hosted cost track.
+A directional green light: on a repeatable extraction workflow, **open-weight + frontier-routing reproduced frontier quality at ~6× lower cost**, with the open model carrying ~83% of the load. The manifesto's cost-at-parity claim now has a (small, honest) number behind it. Next: scale the set, sweep the router threshold for the Pareto curve, and add a second archetype. Self-hosted deployment should remain sensitivity analysis, not a headline result.
 
 ---
 
@@ -159,4 +159,4 @@ Run: **2026-06-26** · n=98 hard invoices (5 fields incl. IBAN/tax-id) · cheap 
 
 ---
 
-**Next (step 3 of the sequence): package + write up.** We now have extraction + classification generality, a cost-vs-difficulty curve, and a cost × quality × latency characterization with a clear interactive-vs-batch routing recommendation — enough for a credible public benchmark + results write-up. Self-hosted GPU cost track still optional.
+**Next (step 3 of the sequence): package + write up.** We now have extraction + classification generality, a cost-vs-difficulty curve, and a cost × quality × latency characterization with a clear interactive-vs-batch routing recommendation — enough for a credible public benchmark + results write-up. Self-hosted GPU deployment can be added later as a sensitivity card, not as another core benchmark axis.

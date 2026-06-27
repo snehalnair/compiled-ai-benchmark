@@ -63,7 +63,7 @@ Chosen to (a) be genuinely common across SMEs, (b) have **objective ground truth
 
 Use public datasets for reproducibility; supplement with **synthetic** data (LLM-generated, human-spot-checked) where private SME data would otherwise be needed. Pin dataset versions and licenses in the repo. Start with 1, 3, and 4 — one easy extraction, one classification, one mid-difficulty — to get signal fast.
 
-**Open-weight model pool to evaluate** (pin exact versions + prices on the run date — prices move): Qwen, Llama, Mistral, DeepSeek, Gemma, Phi families. Evaluate via a cheap inference provider *and* self-hosted, since the honest cost story differs (see §6).
+**Open-weight model pool to evaluate** (pin exact versions + prices on the run date — prices move): Qwen, Llama, Mistral, DeepSeek, Gemma, Phi families. The measured benchmark uses cheap hosted inference providers as the open-model baseline. Self-hosted deployment is handled separately as sensitivity analysis because its cost depends on serving stack, quantization, utilization, warm/cold-start policy, and SLA (see §6).
 
 ---
 
@@ -90,7 +90,7 @@ Per-run cost for an arm, summed over pipeline nodes:
 
 ```
 C_run = Σ_nodes ( tokens_in · price_in  +  tokens_out · price_out )      # API-priced
-C_run = (GPU_$per_hr · runtime_hr) + amortized_idle + ops_overhead       # self-hosted
+C_run = (GPU_$per_hr · runtime_hr) + amortized_idle + ops_overhead       # self-hosted sensitivity only
 ```
 
 **Router arm (R) blended cost.** With a cheap gate routing a fraction `f` of inputs to frontier and `1 − f` to open-weight:
@@ -115,7 +115,7 @@ N*  =  C_compile / ( C_run(baseline) − C_run(arm) )      # break-even run coun
 ```
 
 **Honesty rules** that make this credible rather than marketing:
-1. Include **self-hosting overhead** (idle GPU, ops, batching inefficiency) — not just the sticker token price. The open-model story must survive its real total cost.
+1. Do not present self-hosted GPU cost as a headline benchmark number. Treat it as a **deployment sensitivity card**: model revision, serving stack, quantization, hardware price, workload shape, utilization, warm/cold-start policy, p50/p95/p99, quality delta, and ops overhead. Compare only at iso-quality and stated SLA.
 2. **Pin model versions and per-token prices to a dated snapshot.** Prices fall fast; a benchmark with undated prices is worthless in 6 months.
 3. Report the **frontier-price-decline sensitivity**: re-run the headline with frontier prices cut 50%/75% to show the conclusion is robust (compilation + amortization compound *with* falling prices, not against them).
 
@@ -157,7 +157,7 @@ If any fires, that is a publishable negative result and saves you from building 
 
 - **v0 (≈2–3 weeks):** archetypes 1, 3, 4 · arms A, B, D · cost + success-rate only · pipelines compiled **by hand**. Goal: a directional signal — is there a there there?
 - **v1 (≈4–6 weeks):** all arms A–E · add variance, amortization, price-sensitivity · LLM-judge validated against humans · publish repo + report.
-- **v2:** full 8 archetypes · self-hosted cost track · drift/maintenance experiment · invite external replication.
+- **v2:** full 8 archetypes · one reference self-hosted deployment card as sensitivity analysis · drift/maintenance experiment · invite external replication.
 
 Manual compilation in v0 is deliberate: prove the *economics* before investing in the auto-compiler (your eventual OSS Phase 1). Don't build the tool until the benchmark says the tool is worth building.
 
