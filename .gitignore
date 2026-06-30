@@ -2,5 +2,6 @@
 __pycache__/
 *.pyc
 
-# third-party dataset cache (regenerable via loaders; not ours to redistribute)
+# third-party dataset caches (regenerable via loaders; not ours to redistribute)
 data/banking77_test_pool.jsonl
+data/legalbench_*_test.jsonl

@@ -227,6 +227,66 @@ def load_yaml_task(path, limit=None, seed=0):
     )
 
 
+# LegalBench judgment-classification tasks (Guha et al.). Loaded from HuggingFace at
+# runtime and cached locally; data is NOT redistributed (caches are gitignored).
+LEGALBENCH_INSTRUCTIONS = {
+    "hearsay": (
+        "You are classifying whether a described piece of evidence is hearsay. Hearsay is an "
+        "out-of-court statement offered to prove the truth of the matter asserted — not, for "
+        "example, one offered only to show its effect on a listener or that it was said at all. "
+        "Read the scenario and decide whether it is hearsay."),
+    "personal_jurisdiction": (
+        "You are deciding whether a U.S. court has personal jurisdiction over the defendant in "
+        "the scenario, under the minimum-contacts / purposeful-availment standard. Read the facts "
+        "and answer Yes if personal jurisdiction exists, No otherwise."),
+    "diversity_1": (
+        "You are deciding whether a U.S. federal court has diversity jurisdiction over the case. "
+        "Diversity jurisdiction requires BOTH complete diversity of citizenship between all "
+        "plaintiffs and all defendants AND an amount in controversy exceeding $75,000. Read the "
+        "facts and answer Yes or No."),
+}
+
+
+def _legalbench(config, limit=50, seed=0, labels=("Yes", "No")):
+    """Generic LegalBench binary/fixed-label loader (single text field → one `answer` enum)."""
+    cache = os.path.join(DATA_DIR, f"legalbench_{config}_test.jsonl")
+    pool = []
+    if os.path.isfile(cache):
+        with open(cache) as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    o = json.loads(line)
+                    pool.append((o["text"], o["answer"]))
+    else:
+        offset = 0
+        while offset < 4000:
+            batch = _rows("nguha/legalbench", "test", config=config, offset=offset, length=100)
+            if not batch:
+                break
+            for item in batch:
+                row = item["row"]
+                t, a = row.get("text"), row.get("answer")
+                if t and a in labels:
+                    pool.append((t, a))
+            offset += len(batch)
+            time.sleep(0.2)
+        os.makedirs(DATA_DIR, exist_ok=True)
+        with open(cache, "w") as f:
+            for t, a in pool:
+                f.write(json.dumps({"text": t, "answer": a}) + "\n")
+    samples = [{"text": t, "fields": {"answer": a}} for t, a in pool[:limit]]
+    return Task(f"legalbench_{config}", ["answer"], (), ["answer"], samples,
+                instruction=LEGALBENCH_INSTRUCTIONS[config], enum={"answer": list(labels)})
+
+
+def _make_legalbench(cfg):
+    return lambda limit=50, seed=0: _legalbench(cfg, limit, seed)
+
+
 LOADERS = {"synthetic": load_synthetic,
            "invoices_ocr": load_invoices_ocr,
-           "support_triage": load_support_triage}
+           "support_triage": load_support_triage,
+           "legalbench_hearsay": _make_legalbench("hearsay"),
+           "legalbench_personal_jurisdiction": _make_legalbench("personal_jurisdiction"),
+           "legalbench_diversity": _make_legalbench("diversity_1")}

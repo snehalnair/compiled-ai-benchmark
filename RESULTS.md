@@ -160,3 +160,31 @@ Run: **2026-06-26** · n=98 hard invoices (5 fields incl. IBAN/tax-id) · cheap 
 ---
 
 **Next (step 3 of the sequence): package + write up.** We now have extraction + classification generality, a cost-vs-difficulty curve, and a cost × quality × latency characterization with a clear interactive-vs-batch routing recommendation — enough for a credible public benchmark + results write-up. Self-hosted GPU deployment can be added later as a sensitivity card, not as another core benchmark axis.
+
+---
+
+# v3 — judgment tasks: "needs a frontier" is not predictable from difficulty (LegalBench)
+
+Run: **2026-06-26** · LegalBench (Guha et al.) judgment-classification tasks, n=50–60 · frontier Opus 4.8; cheap Qwen-2.5-7B / Llama-3.1-8B via OpenRouter · A(thinking-on)/B(thinking-off)/D(open) + disagreement-router sweep. Points → `data/pareto_legalbench_*.csv`.
+
+| task | frontier B [CI] | open D [CI] | disagreement router | escalated | verdict |
+|---|---|---|---|---|---|
+| `hearsay` (legal-evidence judgment) | 0.83–0.87 | **0.92 [0.85-0.98]** | 0.95 | 12% | open ≥ frontier |
+| `personal_jurisdiction` (multi-step doctrine) | **0.94–0.96** | 0.62 [0.48-0.76] | 0.66 | 12% | frontier ≫ open; router fails |
+
+(Frontier *with* thinking (arm A) ≈ thinking off — hearsay A=0.85/B=0.83; PJ A=0.90/B=0.96 — so the gap is not a thinking-off artifact.)
+
+## Findings
+
+- **"Judgment-heavy" ≠ "needs a frontier."** On `hearsay` the open 7B matches or beats Opus (0.92 vs 0.83–0.87) at ~357× lower cost; letting Opus *think* doesn't change it (a strong model can overthink a fixed rubric).
+- **The real break-point is multi-step reasoning.** On `personal_jurisdiction` (apply the minimum-contacts doctrine to facts) the open 7B collapses to 0.62 vs the frontier's 0.94–0.96 — non-overlapping CIs, a genuine capability cliff.
+- **Two superficially-identical tasks, opposite outcomes.** Both are "hard binary legal classification"; one needs no frontier, the other needs it outright. **You cannot predict the frontier fraction from intuitive difficulty — you must measure it.** This is the headline.
+- **On the genuine break-point, the disagreement router FAILS** (escalates 12%, reaches 0.66 vs frontier 0.94): the two cheap models are *jointly* wrong and *agree*, so the gate never fires. Reasoning break-points produce **shared blindspots that inter-model agreement cannot detect** — a stronger form of the confident-error blindness from v1.1. Recovering frontier quality requires escalating ~everything (cost advantage → ~1×).
+
+## What it changes
+The gradient is now complete and richer than "savings shrink with difficulty": open wins outright (clean extraction; hearsay); router recovers parity (triage; hard-invoice); **frontier necessary *and routing fails*** (personal_jurisdiction — cheap path jointly and undetectably wrong). The frontier fraction *and whether routing even works* are per-task properties to MEASURE, not assume.
+
+## Caveats
+- n=50–60, single seed, CIs ±0.12. `diversity_1` excluded from the headline (80% "No" base rate; needs balanced accuracy).
+- hearsay's open≥frontier is "matches" (overlapping CIs), not provably "beats"; per-example error analysis (do frontier errors cluster on hearsay exceptions?) is future work.
+- LegalBench has per-task licenses; data is loaded at runtime, not redistributed; cite Guha et al.

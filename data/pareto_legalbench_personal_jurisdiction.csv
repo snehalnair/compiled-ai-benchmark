@@ -1,0 +1,4 @@
+point,success,success_lo,success_hi,cost_per_run,frontier_fraction
+D open1-only,0.6200,0.4800,0.7600,0.000008,0.0000
+R disagree>=1,0.6600,0.5200,0.7800,0.000343,0.1200
+B frontier-only,0.9400,0.8600,1.0000,0.002796,1.0000

@@ -122,7 +122,7 @@ The practical question this repo helps answer:
 
 ## Task Suite
 
-The current package covers two workflow types:
+The current package covers three workflow types:
 
 1. **Invoice extraction**
    - Easy invoice fields: invoice number, date, total
@@ -133,8 +133,14 @@ The current package covers two workflow types:
    - 77-way banking intent classification
    - Dataset source: `mteb/banking77`
 
-This is intentionally small. The goal is to establish the cost-vs-difficulty curve
-before expanding into more archetypes.
+3. **Legal judgment classification** (LegalBench, Guha et al.)
+   - `hearsay` (legal-evidence judgment) and `personal_jurisdiction` (multi-step doctrine)
+   - Key finding: "judgment-heavy" does not predict "needs a frontier" — a 7B matches Opus on
+     hearsay but collapses on personal jurisdiction. The frontier fraction must be measured, not assumed.
+   - Dataset source: `nguha/legalbench` (per-task licenses; loaded at runtime, not redistributed)
+
+This is intentionally small. The goal is to establish the cost-vs-difficulty curve and show that
+the frontier fraction must be measured per task, not assumed, before expanding archetypes.
 
 ---
 
@@ -238,6 +244,13 @@ Support triage Pareto sweep:
 
 ```bash
 python sweep.py --dataset support_triage --limit 50 --workers 6
+```
+
+Legal judgment — the break-point (open collapses on multi-step reasoning; routing fails):
+
+```bash
+python run.py --dataset legalbench_personal_jurisdiction --limit 50 --arms A_frontier_naive,B_frontier_singleshot,D_compiled_open
+python sweep.py --dataset legalbench_hearsay --limit 60
 ```
 
 v2 hard-invoice latency and upfront-router run:
