@@ -188,3 +188,35 @@ The gradient is now complete and richer than "savings shrink with difficulty": o
 - n=50–60, single seed, CIs ±0.12. `diversity_1` excluded from the headline (80% "No" base rate; needs balanced accuracy).
 - hearsay's open≥frontier is "matches" (overlapping CIs), not provably "beats"; per-example error analysis (do frontier errors cluster on hearsay exceptions?) is future work.
 - LegalBench has per-task licenses; data is loaded at runtime, not redistributed; cite Guha et al.
+
+---
+
+# v4 — external validity: does the break-point generalize beyond law? (MMLU, 4 domains)
+
+Run: **2026-06-30** · MMLU (Hendrycks et al.) test split, n=50/subject · frontier Opus 4.8 (B, thinking-off) vs open Qwen-2.5-7B (D) · 4-way multiple choice (random baseline 0.25). Caches gitignored; cite Hendrycks et al.
+
+| domain | modality | frontier B [CI] | open-7B D [CI] | gap (B−D) | open xB |
+|---|---|---|---|---|---|
+| `professional_medicine` | MCQ recall | 0.98 [0.94-1.00] | 0.68 [0.54-0.80] | **+0.30** | 282× |
+| `econometrics` | MCQ recall | 0.86 [0.76-0.94] | 0.60 [0.46-0.74] | +0.26 | 325× |
+| `professional_law` | MCQ recall | 0.82 [0.72-0.92] | 0.52 [0.38-0.66] | +0.30 | 269× |
+| `college_chemistry` | MCQ recall | 0.72 [0.60-0.84] | 0.44 [0.30-0.58] | +0.28 | 329× |
+
+## Findings — the result is a *complication*, not a clean replication (and that's the point)
+
+- **Within MMLU the gap is FLAT (~0.26–0.30), not variable.** The LegalBench surprise was two superficially-identical tasks with opposite outcomes (hearsay gap ≈0, PJ gap +0.33). MMLU does **not** reproduce that within-suite variance: across medicine/econ/law/chemistry the open 7B sits a near-constant ~28 points behind the frontier. Honest reading: the *within-suite unpredictability* is a property of free-text reasoning tasks, not of knowledge-recall MCQ. We do not claim MMLU replicates it.
+- **But the headline — "you can't read the frontier requirement off observable difficulty" — gets STRONGER across datasets.** Line up frontier accuracy (how easy the *frontier* finds it) against the gap:
+  - `hearsay`: frontier ~0.85 (easy-ish) → open **ahead** (gap −0.07).
+  - `professional_medicine`: frontier **0.98** (trivial for frontier) → open **30 pts behind**.
+  - These two both look "easy" by the only signal you have before measuring (the frontier nails them), yet they sit on **opposite sides of the open/frontier line**. The frontier's own success rate predicts *nothing* about whether open can stand in.
+- **The gap is decoupled from difficulty within MMLU too.** Medicine is the *easiest* subject for the frontier (0.98) yet has the *largest* gap (0.30); chemistry is the *hardest* (0.72) yet the gap is the *same* (0.28). "Frontier finds it easy" ≠ "open can do it."
+- **Different failure mode, same operational lesson.** LegalBench PJ fails by *reasoning* collapse (multi-step doctrine); MMLU fails by *knowledge* limits (a 7B lacks the recall). Both are invisible until measured, and both defeat naïve gates — the open model answers a confident letter, so presence gates escalate 0% and the gap survives untouched.
+
+## What it changes
+External validity for contribution #2 now rests on a **cross-dataset, cross-modality** contrast, not a single suite: across free-text legal judgment (LegalBench) and knowledge-recall MCQ (MMLU), **the open-vs-frontier gap cannot be predicted from intuitive difficulty or from the frontier's own accuracy.** Sometimes a hard task needs no frontier (hearsay); sometimes an easy-for-frontier task can't be served by open at all (medicine). The frontier fraction is an empirical per-(task,model) quantity. Measure it.
+
+## Caveats
+- n=50, single seed, CIs ±0.13–0.14; MMLU subject gaps are within each other's CIs, so "flat" means "no detectable variance at this n," not "provably equal."
+- MCQ recall is a different modality from the enterprise extraction/judgment framing — included for *generalization breadth* of the unpredictability claim, not as an enterprise workload.
+- D is the pure-open arm (front_frac 0%); the *routed* frontier fraction needed for iso-quality (and whether a disagreement gate helps where the 7B lacks knowledge) is the natural next probe.
+- GPQA was intended as the hard-science point but is gated (401) on the HF rows API; college_chemistry stands in as the college-STEM domain.

@@ -284,9 +284,58 @@ def _make_legalbench(cfg):
     return lambda limit=50, seed=0: _legalbench(cfg, limit, seed)
 
 
+# --- Multiple-choice loader (assembles question + options into one text field, enum A–D).
+# One-time unlock for cross-domain breadth: any MMLU subject is a one-line LOADERS entry. ---
+MMLU_INSTRUCTION = ("Answer the following multiple-choice question. Respond with the single "
+                    "letter (A, B, C, or D) of the best answer.")
+
+
+def load_mmlu(subject, limit=50, seed=0):
+    """MMLU subject as a fixed-enum classification task. Loaded at runtime, cached locally
+    (gitignored, not redistributed). Cite MMLU (Hendrycks et al.)."""
+    cache = os.path.join(DATA_DIR, f"mmlu_{subject}_test.jsonl")
+    letters, pool = "ABCD", []
+    if os.path.isfile(cache):
+        with open(cache) as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    o = json.loads(line)
+                    pool.append((o["text"], o["answer"]))
+    else:
+        offset = 0
+        while offset < 3000:
+            batch = _rows("cais/mmlu", "test", config=subject, offset=offset, length=100)
+            if not batch:
+                break
+            for item in batch:
+                row = item["row"]
+                q, ch, a = row.get("question"), row.get("choices"), row.get("answer")
+                if q and isinstance(ch, list) and len(ch) == 4 and isinstance(a, int) and 0 <= a < 4:
+                    text = q + "\n" + "\n".join(f"{letters[i]}) {ch[i]}" for i in range(4))
+                    pool.append((text, letters[a]))
+            offset += len(batch)
+            time.sleep(0.2)
+        os.makedirs(DATA_DIR, exist_ok=True)
+        with open(cache, "w") as f:
+            for t, a in pool:
+                f.write(json.dumps({"text": t, "answer": a}) + "\n")
+    samples = [{"text": t, "fields": {"answer": a}} for t, a in pool[:limit]]
+    return Task(f"mmlu_{subject}", ["answer"], (), ["answer"], samples,
+                instruction=MMLU_INSTRUCTION, enum={"answer": list("ABCD")})
+
+
+def _make_mmlu(subject):
+    return lambda limit=50, seed=0: load_mmlu(subject, limit, seed)
+
+
 LOADERS = {"synthetic": load_synthetic,
            "invoices_ocr": load_invoices_ocr,
            "support_triage": load_support_triage,
            "legalbench_hearsay": _make_legalbench("hearsay"),
            "legalbench_personal_jurisdiction": _make_legalbench("personal_jurisdiction"),
-           "legalbench_diversity": _make_legalbench("diversity_1")}
+           "legalbench_diversity": _make_legalbench("diversity_1"),
+           "mmlu_professional_medicine": _make_mmlu("professional_medicine"),
+           "mmlu_econometrics": _make_mmlu("econometrics"),
+           "mmlu_professional_law": _make_mmlu("professional_law"),
+           "mmlu_college_chemistry": _make_mmlu("college_chemistry")}
