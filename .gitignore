@@ -2,6 +2,9 @@
 __pycache__/
 *.pyc
 
+# private paper working docs (skeleton, early design) — never publish
+paper/
+
 # third-party dataset caches (regenerable via loaders; not ours to redistribute)
 data/banking77_test_pool.jsonl
 data/legalbench_*_test.jsonl
